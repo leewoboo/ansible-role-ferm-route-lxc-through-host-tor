@@ -1,0 +1,132 @@
+- name: ensure tor transport port and dns is setup for the lxc network
+  sudo: true
+  lineinfile: >
+    dest=/etc/tor/torrc
+    line="{{ item }}"
+    state=present
+  with_items: ["TransPort {{ bridge_address }}:9040","DNSPort {{ bridge_address }}:53"]
+#    - TransPort {{ bridge_address }}:9040
+#    - DNSPort {{ bridge_address }}:53
+  register: torrc_modified
+  notify: restart tor
+#  when: route_through_tor is defined
+  tags:
+    - torrouting
+
+
+- name: Add ferm config directory for additional config files
+  file:
+    path=/etc/ferm/ferm.d
+    state=directory
+    owner=root group=adm mode=0700
+  sudo: true
+
+- name: modify ferm.conf to include lxc rules
+  sudo: true
+  lineinfile:
+    dest=/etc/ferm/ferm.conf
+    state=present
+    line="@include 'ferm.d/10_lxc.conf';"
+    regexp="^\\s*@include 'ferm.d/10_lxc.conf';"
+  tags:
+    - fermline
+
+- name: add ferm rules to route lxc traffic through host tor
+  sudo: true
+  template:
+   dest=/etc/ferm/ferm.d/10_lxc.conf
+   src=etc/ferm/ferm.d/10_lxc.conf.j2
+   owner=root 
+   group=root
+  notify:
+    - restart ferm
+
+- name: ensure group for user in rules exist
+  sudo: true
+  group:
+    state=present
+    name=clearnet
+    gid=161
+    system=yes
+
+- name: ensure users in rules exist
+  sudo: true
+  user: 
+    state=present
+    name=clearnet
+    uid=146
+    group=clearnet
+    system=yes
+
+#- name: copy lxc rules to ferm
+#  sudo: true
+#  template:
+#    dest=/etc/ferm/ferm.d/input-lxc.ferm
+#    src=etc/ferm/ferm.d/input-lxc.ferm.j2
+#    owner=root
+#    group=root
+
+#- name: copy lxc rules to ferm
+#  sudo: true
+#  template:                                  
+#    dest=/etc/ferm/ferm.d/output-lxc.ferm
+#    src=etc/ferm/ferm.d/output-lxc.ferm.j2
+#    owner=root
+#    group=root 
+
+#- name: copy lxc rules to ferm
+#  sudo: true
+#  template:                                  
+#    dest=/etc/ferm/ferm.d/forward-lxc.ferm
+#    src=etc/ferm/ferm.d/forward-lxc.ferm.j2
+#    owner=root
+#    group=root 
+
+#- name: copy lxc rules to ferm
+#  sudo: true
+#  template:                                  
+#    dest=/etc/ferm/ferm.d/prerouting-lxc.ferm
+#    src=etc/ferm/ferm.d/prerouting-lxc.ferm.j2
+#    owner=root
+#    group=root 
+
+##FIXME: none of the following works!!!
+
+#- name: modify ferm.conf to include lxc rules
+#  sudo: true
+#  lineinfile:
+#    dest=/etc/ferm/ferm.conf
+#    state=present
+#    line="            @include 'ferm.d/input-lxc.ferm'"
+#    regexp="^\\s*@include 'ferm.d/output-lxc.ferm'"
+#    insertafter="^domain ip\\s+table filter\\s+chain INPUT\\s+policy DROP;\\s+mod state state (RELATED ESTABLISHED) ACCEPT;"
+#  tags:
+#    - fermline
+#
+#- name: modify ferm.conf to include lxc rules
+#  sudo: true
+#  lineinfile:                                                                  
+#    dest=/etc/ferm/ferm.conf                                                   
+#    state=present
+#    insertafter="^domain ip\\s+table filter\\s+chain OUTPUT\\s+policy DROP;\\s+mod state state (RELATED ESTABLISHED) ACCEPT;"
+#    regexp="^\\s*@include 'ferm.d/output-lxc.ferm'"
+#    line="            @include 'ferm.d/output-lxc.ferm'"
+#
+                                                                             
+#- name: modify ferm.conf to include lxc rules                                  
+#  sudo: true
+#  lineinfile:                                                                  
+#    dest=/etc/ferm/ferm.conf                                                       state=present                                                              
+#    insertafter="^domain ip\\s+table filter\\s+chain OUTPUT\\s+policy DROP;"
+#    regexp="^\\s*@include 'ferm.d/forward-lxc.ferm'"                            
+#    line="            @include 'ferm.d/forward-lxc.ferm'"
+#
+                                                                             
+#- name: modify ferm.conf to include lxc rules                                  
+#  sudo: true
+#  lineinfile:                                                                  
+#    dest=/etc/ferm/ferm.conf                                                       state=present                                                              
+#    insertafter="^domain ip\\s+table filter\\s+chain PREROUTING\\s+policy ACCEPT;"
+#
+#    regexp="^\\s*@include 'ferm.d/prerouting-lxc.ferm'"                            
+#    line="            @include 'ferm.d/prerouting-lxc.ferm'"

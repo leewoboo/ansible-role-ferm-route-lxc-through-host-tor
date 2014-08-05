@@ -1,0 +1,10 @@
+---
+
+- name: restart ferm
+  sudo: true
+  service: name=ferm state=restarted
+
+- name: restart tor
+  sudo: true
+  service: name=tor state=restarted
+

@@ -1,0 +1,14 @@
+---
+galaxy_info:
+  author: Lee Woboo
+  description: configures ferm and tor to route lxc containers traffic to the Internet through tor.
+  license: GPLv3
+  min_ansible_version: 1.6
+  platforms:
+   - name: Debian
+     versions:
+      - wheezy
+  categories:
+   - system
+   - networking
+dependencies: []  

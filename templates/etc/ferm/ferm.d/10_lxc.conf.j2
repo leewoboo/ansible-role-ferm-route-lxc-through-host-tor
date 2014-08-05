@@ -1,0 +1,17 @@
+domain ip table nat chain PREROUTING interface {{ bridge_name }} {
+                protocol tcp syn REDIRECT to-ports 9040;                        
+                protocol udp dport 53 REDIRECT to-ports 53;                     
+}
+# needed?
+#domain ip table nat chain POSTROUTING saddr {{ bridge_network }}/{{ bridge_cidr }} MASQUERADE;           
+
+#domain ip table filter chain INPUT interface {{ bridge_name }} daddr {{ bridge_network }}/{{ bridge_cidr }} ACCEPT; 
+#domain ip table filter chain OUTPUT outerface {{ bridge_name }} daddr {{ bridge_network }}/{{ bridge_cidr }} ACCEPT;
+#domain ip table filter chain FORWARD saddr {{ bridge_network }}/{{ bridge_cidr }} interface {{ bridge_name }} mod state state (NEW) ACCEPT;
+
+domain ip table filter {
+    chain INPUT interface {{ bridge_name }} daddr {{ bridge_network }}/{{ bridge_cidr }} ACCEPT;
+    chain OUTPUT outerface {{ bridge_name }} daddr {{ bridge_network }}/{{ bridge_cidr }} ACCEPT;
+    chain FORWARD saddr {{ bridge_network }}/{{ bridge_cidr }} interface {{ bridge_name }} mod state state (NEW) ACCEPT;
+}
+
